@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase';
 import type { Task, TaskStatus, TeamMember } from '@/lib/types';
 import { TaskCard } from './TaskCard';
 import { CreateTaskForm } from './CreateTaskForm';
@@ -19,7 +19,7 @@ export function TaskBoard() {
   const [loading, setLoading] = useState(true);
 
   const fetchTasks = useCallback(async () => {
-    const { data } = await supabase
+    const { data } = await getSupabase()
       .from('tf_tasks')
       .select('*, assignee:tf_team_members(id, name, email, role)')
       .order('created_at', { ascending: false });
@@ -27,7 +27,7 @@ export function TaskBoard() {
   }, []);
 
   const fetchTeamMembers = useCallback(async () => {
-    const { data } = await supabase.from('tf_team_members').select('*').order('name');
+    const { data } = await getSupabase().from('tf_team_members').select('*').order('name');
     if (data) setTeamMembers(data);
   }, []);
 
@@ -39,7 +39,7 @@ export function TaskBoard() {
     setTasks((prev) =>
       prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
     );
-    await supabase
+    await getSupabase()
       .from('tf_tasks')
       .update({ status: newStatus, updated_at: new Date().toISOString() })
       .eq('id', taskId);
@@ -47,7 +47,7 @@ export function TaskBoard() {
 
   const handleDelete = async (taskId: string) => {
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    await supabase.from('tf_tasks').delete().eq('id', taskId);
+    await getSupabase().from('tf_tasks').delete().eq('id', taskId);
   };
 
   const handleCreateTask = async (task: {
@@ -56,7 +56,7 @@ export function TaskBoard() {
     priority: string;
     assignee_id: string | null;
   }) => {
-    const { data } = await supabase
+    const { data } = await getSupabase()
       .from('tf_tasks')
       .insert({
         title: task.title,
