@@ -1,4 +1,4 @@
-import { supabaseAdmin } from './supabase-server';
+import { getSupabaseAdmin } from './supabase-server';
 import type { ToolDefinition } from '@stewrd/sdk';
 
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
@@ -133,10 +133,11 @@ export async function handleToolCall(toolCall: {
   arguments: Record<string, unknown>;
 }): Promise<string> {
   const { name, arguments: args } = toolCall;
+  const supabase = getSupabaseAdmin();
 
   switch (name) {
     case 'get_tasks': {
-      let query = supabaseAdmin
+      let query = supabase
         .from('tf_tasks')
         .select('*, assignee:tf_team_members(id, name, email, role)')
         .order('created_at', { ascending: false });
@@ -151,7 +152,7 @@ export async function handleToolCall(toolCall: {
     }
 
     case 'get_team_members': {
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('tf_team_members')
         .select('*')
         .order('name');
@@ -160,7 +161,7 @@ export async function handleToolCall(toolCall: {
     }
 
     case 'create_task': {
-      const { data, error } = await supabaseAdmin.from('tf_tasks').insert({
+      const { data, error } = await supabase.from('tf_tasks').insert({
         title: args.title as string,
         description: (args.description as string) || null,
         priority: (args.priority as string) || 'medium',
@@ -183,7 +184,7 @@ export async function handleToolCall(toolCall: {
       if ('sprint_id' in args) updates.sprint_id = args.sprint_id || null;
       updates.updated_at = new Date().toISOString();
 
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('tf_tasks')
         .update(updates)
         .eq('id', taskId)
@@ -195,7 +196,7 @@ export async function handleToolCall(toolCall: {
     }
 
     case 'delete_task': {
-      const { error } = await supabaseAdmin
+      const { error } = await supabase
         .from('tf_tasks')
         .delete()
         .eq('id', args.task_id as string);
@@ -205,7 +206,7 @@ export async function handleToolCall(toolCall: {
 
     case 'get_sprint_summary': {
       // Get the active sprint
-      const { data: sprint } = await supabaseAdmin
+      const { data: sprint } = await supabase
         .from('tf_sprints')
         .select('*')
         .eq('status', 'active')
@@ -213,7 +214,7 @@ export async function handleToolCall(toolCall: {
 
       if (!sprint) {
         // Fallback: get all tasks regardless of sprint
-        const { data: allTasks } = await supabaseAdmin
+        const { data: allTasks } = await supabase
           .from('tf_tasks')
           .select('*, assignee:tf_team_members(id, name)');
 
@@ -236,7 +237,7 @@ export async function handleToolCall(toolCall: {
         });
       }
 
-      const { data: tasks } = await supabaseAdmin
+      const { data: tasks } = await supabase
         .from('tf_tasks')
         .select('*, assignee:tf_team_members(id, name)')
         .eq('sprint_id', sprint.id);
